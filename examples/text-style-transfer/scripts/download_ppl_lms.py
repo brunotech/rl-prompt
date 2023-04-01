@@ -15,9 +15,11 @@ if __name__ == "__main__":
 
     target_path = './evaluation/ppl'
     os.makedirs(target_path, exist_ok=True)
-    maybe_download(urls=MODEL_URLS[args.model_name],
-                   path=target_path,
-                   extract=True,
-                   filenames=args.model_name + '.tar.gz')
+    maybe_download(
+        urls=MODEL_URLS[args.model_name],
+        path=target_path,
+        extract=True,
+        filenames=f'{args.model_name}.tar.gz',
+    )
 
 

@@ -96,11 +96,11 @@ class PromptedTextStyleTransferReward(BaseReward):
             hypos = self.generator.sample_generate(prompt, src, N,
                                                    self.top_k, self.top_p)
             sum_rewards, content_scores, style_probs = \
-                self.selector.compute_sample_rewards(src, hypos, label)
+                    self.selector.compute_sample_rewards(src, hypos, label)
 
             # Bootstrap the max reward for k times and average
             bootstrap_max_rewards: List[float] = \
-                self._boostrap_max_rewards_k_times(sum_rewards, k_reward)
+                    self._boostrap_max_rewards_k_times(sum_rewards, k_reward)
             # Average boostrap max rewards as the final reward
             reward = torch.Tensor(bootstrap_max_rewards).float().mean()
 
@@ -139,15 +139,16 @@ class PromptedTextStyleTransferReward(BaseReward):
                                                           input_rewards)
 
         self.tokens_explored = \
-            self.tokens_explored.union(*[set(p) for p in prompt_tokens])
+                self.tokens_explored.union(*[set(p) for p in prompt_tokens])
         quantities_to_log["num_tokens_explored"].append(
             torch.tensor(len(self.tokens_explored)).float())
 
-        rewards_log = dict(
-            (reward_key, torch.stack(reward_vals, dim=0).mean())
-            for reward_key, reward_vals in quantities_to_log.items())
+        rewards_log = {
+            reward_key: torch.stack(reward_vals, dim=0).mean()
+            for reward_key, reward_vals in quantities_to_log.items()
+        }
 
-        if to_tensor is True:
+        if to_tensor:
             return rewards_tensor, rewards_log
         else:
             return rewards_tensor.tolist(), rewards_log
@@ -183,11 +184,7 @@ class PromptedTextStyleTransferReward(BaseReward):
         # For each sub-list, take the max as the sub-reward
         values, indices = (torch.tensor(bootstrap_rewards)
                            .float().max(axis=1))
-        # Take numbers from the original list to avoid numerical issues
-        bootstrap_max_rewards = [bootstrap_rewards[i][index]
-                                 for i, index in enumerate(indices)]
-
-        return bootstrap_max_rewards
+        return [bootstrap_rewards[i][index] for i, index in enumerate(indices)]
 
     def _repeat_texts(
         self,

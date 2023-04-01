@@ -109,9 +109,7 @@ class LMAdaptorModel(BaseModel):
                                                                 past_key_values)
 
         sample_logits = torch.cat(sample_logits, dim=1)
-        output = dict(sample_logits=sample_logits,
-                      sample_ids=sample_ids)
-        return output
+        return dict(sample_logits=sample_logits, sample_ids=sample_ids)
 
     def sample(
         self,
@@ -129,7 +127,7 @@ class LMAdaptorModel(BaseModel):
         state, past_key_values = self._get_generation_cache(source_texts)
         sample_tokens = [[] for _ in source_texts]
         sample_ids, sample_logits = [], []
-        for i in range(max_new_tokens):
+        for _ in range(max_new_tokens):
             logits = self._mlp_forward(state)  # [batch_size, vocab_size]
             logits = logits + self.logit_bias
             # print(logits[:, 4:].min().item(), logits.max().item())
@@ -166,11 +164,12 @@ class LMAdaptorModel(BaseModel):
                                         for _ in range(sample_ids.shape[0])])
                           .to(self.device))
 
-        output = dict(sample_tokens=sample_tokens,
-                      sample_logits=sample_logits,
-                      sample_ids=sample_ids,
-                      sample_lengths=sample_lengths)
-        return output
+        return dict(
+            sample_tokens=sample_tokens,
+            sample_logits=sample_logits,
+            sample_ids=sample_ids,
+            sample_lengths=sample_lengths,
+        )
 
     def greedy_search(self,
                       source_texts: List[str],
@@ -184,7 +183,7 @@ class LMAdaptorModel(BaseModel):
         state, past_key_values = self._get_generation_cache(source_texts)
         sample_tokens = [[] for _ in source_texts]
         sample_ids, sample_logits = [], []
-        for i in range(max_new_tokens):
+        for _ in range(max_new_tokens):
             logits = self._mlp_forward(state)
             logits = logits + self.logit_bias
             # print(logits[:, 4:].min().item(), logits.max().item())
@@ -209,11 +208,12 @@ class LMAdaptorModel(BaseModel):
                                         for _ in range(sample_ids.shape[0])])
                           .to(self.device))
 
-        output = dict(sample_tokens=sample_tokens,
-                      sample_logits=sample_logits,
-                      sample_ids=sample_ids,
-                      sample_lengths=sample_lengths)
-        return output
+        return dict(
+            sample_tokens=sample_tokens,
+            sample_logits=sample_logits,
+            sample_ids=sample_ids,
+            sample_lengths=sample_lengths,
+        )
 
     def _get_generation_cache(self,
                               source_texts: List[str],
@@ -252,8 +252,8 @@ class LMAdaptorModel(BaseModel):
         if eos_token_id is None:
             eos_token_id = self.eos_token_id
 
-        is_greedy_gen_mode = (do_sample == False) and (num_beams == 1)
-        is_sample_gen_mode = (do_sample == True) and (num_beams == 1)
+        is_greedy_gen_mode = not do_sample and num_beams == 1
+        is_sample_gen_mode = do_sample and num_beams == 1
         assert is_greedy_gen_mode or is_sample_gen_mode
 
         if is_greedy_gen_mode:

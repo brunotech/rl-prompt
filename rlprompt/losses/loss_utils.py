@@ -149,11 +149,10 @@ def mask_and_reduce(
         if average_across_remaining and sum_over_remaining:
             raise ValueError("Only one of `average_across_remaining` and "
                              "`sum_over_remaining` can be set.")
-        if average_across_remaining:
-            for axis in sorted(list(range(2, rank)), reverse=True):
+        for axis in sorted(list(range(2, rank)), reverse=True):
+            if average_across_remaining:
                 sequence = torch.mean(sequence, dim=axis)
-        elif sum_over_remaining:
-            for axis in sorted(list(range(2, rank)), reverse=True):
+            elif sum_over_remaining:
                 sequence = torch.sum(sequence, dim=axis)
 
     sequence = reduce_batch_time(sequence,
@@ -265,10 +264,11 @@ def reduce_dimensions(
                 tensor = torch.sum(tensor, dim=sum_axis, keepdim=True)
             reduced_axes.update(sum_axes)
 
-            if average_axes is not None:
-                if len(reduced_axes) != len(average_axes) + len(sum_axes):
-                    raise ValueError('`average_axes` and `sum_axes` must not '
-                                     'have overlapped elements.')
+            if average_axes is not None and len(reduced_axes) != len(
+                average_axes
+            ) + len(sum_axes):
+                raise ValueError('`average_axes` and `sum_axes` must not '
+                                 'have overlapped elements.')
     if not keepdims:
         for axis in sorted(list(reduced_axes), reverse=True):
             tensor = torch.squeeze(tensor, dim=axis)

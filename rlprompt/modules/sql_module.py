@@ -35,9 +35,10 @@ class SQLModule(BaseModule):
     ):
         super().__init__()
         # Initialize self._model and self._reward
-        assert target_update_method in ["copy", "polyak"]
-        assert not (top_k is not None and top_p < 1.0), \
-               "Only one of top_k or top_p should be selected"
+        assert target_update_method in {"copy", "polyak"}
+        assert (
+            top_k is None or top_p >= 1.0
+        ), "Only one of top_k or top_p should be selected"
 
         self._model = model
         if target_model is None:
@@ -61,7 +62,7 @@ class SQLModule(BaseModule):
         self._top_p = top_p
         self._num_beams = num_beams
 
-        if reward_shaping is True:
+        if reward_shaping:
             self._reward_shaping_func = get_reward_shaping_func(
                 old_min=reward_shaping_old_min,
                 old_max=reward_shaping_old_max,
@@ -112,17 +113,17 @@ class SQLModule(BaseModule):
         mode: ForwardMode,
         batch: Dict[str, Any]
     ) -> Tuple[torch.Tensor, Dict]:
-        if mode != ForwardMode.SQL_ON and mode != ForwardMode.INFER:
+        if mode not in [ForwardMode.SQL_ON, ForwardMode.INFER]:
             # TODO: Enable training modes other than on-policy
             raise NotImplementedError('Only on-policy sampling and greedy '
                                       'inference is supported now')
 
         if mode == ForwardMode.SQL_ON:
             (logits, logits_, output_tokens, output_ids, sequence_lengths) = \
-                self._decode_sampling(batch=batch)
+                    self._decode_sampling(batch=batch)
 
         raw_rewards, rewards_log = \
-            self.compute_rewards(batch=batch, 
+                self.compute_rewards(batch=batch, 
                                   output_tokens=output_tokens,
                                   mode="train")
         shaped_rewards = self._reward_shaping_func(raw_rewards)
@@ -189,8 +190,8 @@ class SQLModule(BaseModule):
                                        top_p=self._top_p,
                                        num_beams=self._num_beams)
 
-        batch_ = {k: v for k, v in batch.items()}
-        batch_.update(outputs)
+        batch_ = dict(batch)
+        batch_ |= outputs
 
         outputs_ = self._target_model.teacher_forcing(**batch_)
 

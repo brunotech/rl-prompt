@@ -110,9 +110,7 @@ def maybe_download(
                         "Unknown compression type. Only .tar.gz"
                         ".tar.bz2, .tar, and .zip are supported"
                     )
-    if not is_list:
-        return result[0]
-    return result
+    return result if is_list else result[0]
 
 
 # pylint: enable=unused-argument,function-redefined,missing-docstring
@@ -141,8 +139,7 @@ def _extract_google_drive_file_id(url: str) -> str:
     if url_suffix.find("/") == -1:
         # if there's no trailing '/'
         return url_suffix
-    file_id = url_suffix[: url_suffix.find("/")]
-    return file_id
+    return url_suffix[: url_suffix.find("/")]
 
 
 def _download_from_google_drive(
@@ -225,16 +222,10 @@ def read_words(filename: str, newline_token: Optional[str] = None) -> List[str]:
         A list of words.
     """
     with open(filename, "r") as f:
-        if Py3:
-            if newline_token is None:
-                return f.read().split()
-            else:
-                return f.read().replace("\n", newline_token).split()
+        if newline_token is None:
+            return f.read().split()
         else:
-            if newline_token is None:
-                return f.read().split()
-            else:
-                return f.read().replace("\n", newline_token).split()
+            return f.read().replace("\n", newline_token).split()
 
 
 def make_vocab(filenames, max_vocab_size=-1, newline_token=None,
@@ -284,17 +275,13 @@ def make_vocab(filenames, max_vocab_size=-1, newline_token=None,
     counts = counts[:max_vocab_size]
 
     if return_type == "list":
-        if not return_count:
-            return words
-        else:
-            return words, counts
+        return (words, counts) if return_count else words
     elif return_type == "dict":
         word_to_id = dict(zip(words, range(len(words))))
         if not return_count:
             return word_to_id
-        else:
-            word_to_count = dict(zip(words, counts))
-            return word_to_id, word_to_count
+        word_to_count = dict(zip(words, counts))
+        return word_to_id, word_to_count
     else:
         raise ValueError(f"Unknown return_type: {return_type}")
 
@@ -359,6 +346,7 @@ if __name__ == "__main__":
             f'./train/constructed_data/{dataset_name}/',
             exist_ok=True)
         maybe_download(
-        urls=dataset_link,
-        path= f'./train/constructed_data/{dataset_name}/',
-        filenames=f'example.json')
+            urls=dataset_link,
+            path=f'./train/constructed_data/{dataset_name}/',
+            filenames='example.json',
+        )

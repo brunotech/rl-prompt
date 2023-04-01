@@ -23,9 +23,10 @@ class PromptedClassificationDataset(Dataset):
         return len(self.source_texts)
 
     def __getitem__(self, idx):
-        item = {'source_texts': self.source_texts[idx],
-                'class_labels': self.class_labels[idx]}
-        return item
+        return {
+            'source_texts': self.source_texts[idx],
+            'class_labels': self.class_labels[idx],
+        }
 
 
 def make_few_shot_classification_dataset(
@@ -52,39 +53,32 @@ def load_few_shot_classification_dataset(
     base_path: str,
     num_shots: int
 ) -> Tuple[List[str]]:
-    assert dataset in ['agnews', 'cr', 'mr', 'sst-2', 
-                       'sst-5', 'yelp-2', 'yelp-5']
-    assert split in ['train', 'dev', 'test']
-    assert num_shots in [16]
+    assert dataset in {'agnews', 'cr', 'mr', 'sst-2', 'sst-5', 'yelp-2', 'yelp-5'}
+    assert split in {'train', 'dev', 'test'}
+    assert num_shots in {16}
 
     seed_dict = {0:'16-100', 1:'16-13', 2:'16-21', 3:'16-42', 4:'16-87'}
     seed_path = seed_dict[dataset_seed]
     filepath = f'{num_shots}-shot/{dataset}/{seed_path}/{split}.tsv'
     full_filepath = os.path.join(base_path, filepath)
     df = pd.read_csv(full_filepath, sep='\t')
-    if 'text' in df:
-        source_texts = df.text.tolist()
-    else: 
-        source_texts = df.sentence.tolist()
+    source_texts = df.text.tolist() if 'text' in df else df.sentence.tolist()
     class_labels = df.label.tolist()
 
     verbalizers = get_dataset_verbalizers(dataset)
     num_classes = len(verbalizers)
 
-    template = None
-    if dataset == 'agnews': 
-        template = "<mask> {prompt} {sentence_1}"
-
+    template = "<mask> {prompt} {sentence_1}" if dataset == 'agnews' else None
     return (source_texts, class_labels, 
             num_classes, verbalizers, template)
 
 
 def get_dataset_verbalizers(dataset: str) -> List[str]: 
-    if dataset in ['sst-2', 'yelp-2', 'mr', 'cr']:
+    if dataset in {'sst-2', 'yelp-2', 'mr', 'cr'}:
         verbalizers = ['\u0120terrible', '\u0120great'] # num_classes
     elif dataset == 'agnews': 
         verbalizers = ['World', 'Sports', 'Business', 'Tech'] # num_classes
-    elif dataset in ['sst-5', 'yelp-5']:
+    elif dataset in {'sst-5', 'yelp-5'}:
         verbalizers = ['\u0120terrible', '\u0120bad', '\u0120okay', 
                        '\u0120good', '\u0120great'] # num_classes
     elif dataset == 'subj':

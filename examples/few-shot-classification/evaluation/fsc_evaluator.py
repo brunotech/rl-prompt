@@ -28,11 +28,7 @@ class PromptedClassificationEvaluator:
                                    else "cpu")
         self.task_lm = task_lm
         print("Task LM:", self.task_lm)
-        if is_mask_lm is None: 
-            # If False, then treat as left-to-right LM
-            self.is_mask_lm = True if 'bert' in self.task_lm else False
-        else:
-            self.is_mask_lm = is_mask_lm  
+        self.is_mask_lm = 'bert' in self.task_lm if is_mask_lm is None else is_mask_lm
         if self.is_mask_lm:
             assert self.task_lm in SUPPORTED_MASK_LMS
             self._tokenizer = AutoTokenizer.from_pretrained(self.task_lm,
@@ -54,28 +50,20 @@ class PromptedClassificationEvaluator:
 
         self.verbalizer_ids = [self._tokenizer.convert_tokens_to_ids(v)
                                for v in self.verbalizers]
-        if template is None:
-            self.template = self.load_default_template()  # prompt templates
-        else:
-            self.template = template
-
+        self.template = self.load_default_template() if template is None else template
         self.prompt = prompt
 
     # Adapted from
     # https://huggingface.co/docs/transformers/v4.21.1/en/task_summary#masked-language-modeling
     def _get_mask_token_index(self, input_ids: torch.Tensor) -> np.ndarray:
-        mask_token_index = torch.where(
-            input_ids == self._tokenizer.mask_token_id)[1]
-        return mask_token_index
+        return torch.where(input_ids == self._tokenizer.mask_token_id)[1]
 
     def load_default_template(self) -> List[str]:
-        if self.is_mask_lm:
-            template = "{sentence_1} {prompt} <mask> ."
-        else:
-            # Template for left-to-right LMs like GPT-2
-            template = "{sentence_1} {prompt}"
-
-        return template
+        return (
+            "{sentence_1} {prompt} <mask> ."
+            if self.is_mask_lm
+            else "{sentence_1} {prompt}"
+        )
 
     @torch.no_grad()
     def _get_logits(
@@ -93,15 +81,13 @@ class PromptedClassificationEvaluator:
             token_logits = self._generator(
                 **encoded_inputs.to(self.device)).logits
             mask_token_indices = \
-                self._get_mask_token_index(encoded_inputs['input_ids'])
-            out_logits = token_logits[range(batch_size), mask_token_indices, :]
+                    self._get_mask_token_index(encoded_inputs['input_ids'])
+            return token_logits[range(batch_size), mask_token_indices, :]
         else:
             token_logits = self._generator(
                 **encoded_inputs.to(self.device)).logits
             input_lengths = encoded_inputs['attention_mask'].sum(dim=1)
-            out_logits = token_logits[range(batch_size), input_lengths - 1, :]
-
-        return out_logits
+            return token_logits[range(batch_size), input_lengths - 1, :]
 
     def _format_prompts(
         self,
@@ -117,7 +103,7 @@ class PromptedClassificationEvaluator:
     ) -> float:
         num_of_examples = dataloader.dataset.__len__()
         correct_sum = 0
-        for i, batch in enumerate(dataloader):
+        for batch in dataloader:
             inputs = batch['source_texts']  # List
             targets = batch['class_labels']  # Tensor
             batch_size = targets.size(0)
@@ -131,5 +117,4 @@ class PromptedClassificationEvaluator:
                 targets.cuda() == predicted_labels, 1, 0)
             # Compute accuracy
             correct_sum += label_agreement.sum()
-        accuracy = correct_sum/num_of_examples
-        return accuracy
+        return correct_sum/num_of_examples

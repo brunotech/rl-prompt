@@ -49,8 +49,9 @@ class Trainer:
         project_name: Optional[str],
         run_name: Optional[str]
     ):
-        assert do_eval == False or eval_dataset is not None, \
-            "Need to have eval_dataset if do_eval is True"
+        assert (
+            not do_eval or eval_dataset is not None
+        ), "Need to have eval_dataset if do_eval is True"
         self.module = module
 
         self.train_dataset = train_dataset
@@ -223,17 +224,17 @@ class Trainer:
 
         score = score.mean().item()
 
-        utils.add_prefix_to_dict_keys_inplace(
-            score_log,
-            prefix=f"eval/rewards/")
+        utils.add_prefix_to_dict_keys_inplace(score_log, prefix="eval/rewards/")
 
         print('Finish Eval')
-        return utils.unionize_dicts([
-            score_log,
-            # gem_scores_dict,
-            {
-                f"eval/score": score,
-                f"eval/output_length": np.mean([len(tokens) \
-                                                for tokens in hypos])
-            }
-        ])
+        return utils.unionize_dicts(
+            [
+                score_log,
+                {
+                    "eval/score": score,
+                    "eval/output_length": np.mean(
+                        [len(tokens) for tokens in hypos]
+                    ),
+                },
+            ]
+        )

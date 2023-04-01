@@ -44,9 +44,7 @@ class TextStyleTransferEvaluator():
     def _sent_nll(self, hyp):
         input_ids = (self.ppl_tokenizer(hyp, return_tensors='pt')['input_ids']
                      .to(self.device))
-        nll = self.ppl_model(input_ids=input_ids,
-                             labels=input_ids)[0].item()
-        return nll
+        return self.ppl_model(input_ids=input_ids, labels=input_ids)[0].item()
 
     def evaluate_output(self,
                         source_texts: List[str],
@@ -63,24 +61,26 @@ class TextStyleTransferEvaluator():
         content_scores = np.array(content_scores)
         content = round(content_scores.mean(), 1)
 
-        # print('Computing Style Accuracy')
-        style_corrects = []
         batch_size = self.style_batch_size
-        for i, c in enumerate(self.style_classifier(output_dataset,
-                                                    batch_size=batch_size,
-                                                    truncation=True)):
-            style_corrects.append(int(c['label'] == target_labels[i]))
+        style_corrects = [
+            int(c['label'] == target_labels[i])
+            for i, c in enumerate(
+                self.style_classifier(
+                    output_dataset, batch_size=batch_size, truncation=True
+                )
+            )
+        ]
         style_corrects = np.array(style_corrects)
         style = round(100 * style_corrects.mean(), 1)
 
-        # print('Computing Fluency')
-        fluency_corrects = []
         fluency_label = 'LABEL_0'
         batch_size = self.fluency_batch_size
-        for i, c in enumerate(self.fluency_classifier(output_dataset,
-                                                      batch_size=batch_size,
-                                                      truncation=True)):
-            fluency_corrects.append(int(c['label'] == fluency_label))
+        fluency_corrects = [
+            int(c['label'] == fluency_label)
+            for c in self.fluency_classifier(
+                output_dataset, batch_size=batch_size, truncation=True
+            )
+        ]
         fluency_corrects = np.array(fluency_corrects)
         fluency = round(100 * fluency_corrects.mean(), 1)
 

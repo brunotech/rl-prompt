@@ -44,30 +44,30 @@ def sql_loss_with_sparse_rewards(
     if implementation == "v0":
         _sql_loss_func = soft_q_loss_with_sparse_rewards_0
 
-    if implementation == "v1":
+    elif implementation == "v1":
         _sql_loss_func = soft_q_loss_with_sparse_rewards_1
 
-    if implementation == "v2":
+    elif implementation == "v2":
         _sql_loss_func = soft_q_loss_with_sparse_rewards_2
 
-    if implementation == "v3":
-        _sql_loss_func = soft_q_loss_with_sparse_rewards_3
-
-    if implementation == "v2_v2r":
+    elif implementation == "v2_v2r":
         _sql_loss_func = partial(
             soft_q_loss_with_sparse_rewards_2_2_reversed,
             coefficient=coefficient,
             margin_constant=margin_constant,
             margin_coefficient=margin_coefficient)
 
-    if implementation == "v3_v3r":
-        _sql_loss_func = partial(
-            soft_q_loss_with_sparse_rewards_3_3_reversed,
-            coefficient=coefficient)
-
-    if implementation == "v2_v2r_v3_v3r":
+    elif implementation == "v2_v2r_v3_v3r":
         _sql_loss_func = partial(
             soft_q_loss_with_sparse_rewards_2_2_reversed_3_3_reversed,
+            coefficient=coefficient)
+
+    elif implementation == "v3":
+        _sql_loss_func = soft_q_loss_with_sparse_rewards_3
+
+    elif implementation == "v3_v3r":
+        _sql_loss_func = partial(
+            soft_q_loss_with_sparse_rewards_3_3_reversed,
             coefficient=coefficient)
 
     if logits.shape != logits_.shape:
@@ -183,7 +183,7 @@ def soft_q_loss_with_sparse_rewards_2(
         torch.arange(sequence_length.shape[0]),
         sequence_length - 1] = rewards - terminal_V_
 
-    if _recover_mle is True:
+    if _recover_mle:
         utils.colorful_warning("Recover-MLE Mode", bg="red")
         A_ = A.detach() + 1
 
@@ -226,7 +226,7 @@ def soft_q_loss_with_sparse_rewards_3(
         lengths=sequence_length,
         dim=-1)
 
-    if freeze_future_steps is True:
+    if freeze_future_steps:
         # This line of code essentially
         # decompose `A` (with gradient)
         # and cumsum of future `A`

@@ -20,9 +20,10 @@ def compose_hydra_config_store(
 ) -> ConfigStore:
     config_fields = []
     for config_cls in configs:
-        for config_field in dataclasses.fields(config_cls):
-            config_fields.append((config_field.name, config_field.type,
-                                  config_field))
+        config_fields.extend(
+            (config_field.name, config_field.type, config_field)
+            for config_field in dataclasses.fields(config_cls)
+        )
     Config = dataclasses.make_dataclass(cls_name="Config", fields=config_fields)
     cs = ConfigStore.instance()
     cs.store(name=name, node=Config)

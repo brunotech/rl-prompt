@@ -35,11 +35,7 @@ class PromptedGenerator:
     ) -> Optional[int]:
         if control_output_length is None:
             control_output_length = self.control_output_length
-        if control_output_length:
-            # This hack tends to speed up generation compared to default
-            return max(1.5 * seq_len, seq_len + 10)
-        else:
-            return None
+        return max(1.5 * seq_len, seq_len + 10) if control_output_length else None
 
     def sample_generate(
         self,

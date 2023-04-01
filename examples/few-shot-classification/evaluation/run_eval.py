@@ -24,7 +24,7 @@ def main(config: "DictConfig"):
                              batch_size=32,
                              drop_last=False)
 
-    is_mask_lm = True if 'bert' in config.task_lm else False
+    is_mask_lm = 'bert' in config.task_lm
     verbalizers = get_dataset_verbalizers(config.dataset)
     num_classes = len(verbalizers)
     if config.dataset == 'agnews' and is_mask_lm:

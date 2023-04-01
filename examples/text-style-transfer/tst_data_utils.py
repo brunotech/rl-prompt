@@ -16,9 +16,10 @@ class TextStyleTransferDataset(Dataset):
         return len(self.source_texts)
 
     def __getitem__(self, idx):
-        item = {'source_texts': self.source_texts[idx],
-                'target_labels': self.target_labels[idx]}
-        return item
+        return {
+            'source_texts': self.source_texts[idx],
+            'target_labels': self.target_labels[idx],
+        }
 
 
 def load_text_style_transfer_dataset(
@@ -31,22 +32,22 @@ def load_text_style_transfer_dataset(
     max_length: Optional[int],
     max_length_tokenizer: Optional[str]
 ) -> Tuple[List[str]]:
-    assert dataset in ['yelp', 'shakespeare']
-    assert label in [0, 1]
-    assert split in ['train', 'dev', 'test', 'ref']
+    assert dataset in {'yelp', 'shakespeare'}
+    assert label in {0, 1}
+    assert split in {'train', 'dev', 'test', 'ref'}
 
-    if dataset == 'yelp':
-        filepath = f'{dataset}/clean/sentiment.{split}.{label}.clean'
-        full_filepath = os.path.join(base_path, filepath)
-        with open(full_filepath) as f:
-            sentences = [line.strip() for line in f]
-
-    elif dataset == 'shakespeare':
-        seed_dict = {0: f'100-100', 1: f'100-13', 2: f'100-21'}
+    if dataset == 'shakespeare':
+        seed_dict = {0: '100-100', 1: '100-13', 2: '100-21'}
         filepath = f'{dataset}/100-shot/{seed_dict[dataset_seed]}/{split}.tsv'
         full_filepath = os.path.join(base_path, filepath)
         df = pd.read_csv(full_filepath, sep='\t')
         sentences = df.query(f'label == {label}').text.tolist()
+
+    elif dataset == 'yelp':
+        filepath = f'{dataset}/clean/sentiment.{split}.{label}.clean'
+        full_filepath = os.path.join(base_path, filepath)
+        with open(full_filepath) as f:
+            sentences = [line.strip() for line in f]
 
     # Option to keep only certain number of examples
     if max_size is not None:

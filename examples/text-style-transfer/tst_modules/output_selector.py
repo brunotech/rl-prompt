@@ -41,14 +41,14 @@ class TextStyleTransferOutputSelector:
         hypo_dataset = ListDataset(hypos)
         batch_size = self.style_batch_size
         style_rewards = []
-        for i, c in enumerate(self.style_classifier(hypo_dataset,
+        for c in self.style_classifier(hypo_dataset,
                                                     batch_size=batch_size, 
-                                                    truncation=True)):
+                                                    truncation=True):
             prob = ((c['label'] == target_label) * c['score']
                     + (c['label'] != target_label) * (1 - c['score']))
             style_rewards.append(prob * 100)
         sum_rewards = [(c + s) / 2 \
-                       for c, s in zip(content_rewards, style_rewards)]
+                           for c, s in zip(content_rewards, style_rewards)]
 
         return sum_rewards, content_rewards, style_rewards
         
